@@ -14,7 +14,10 @@ class PostController extends Controller
      */
     public function index()
     {
-        //
+        $posts = Post::all();
+        return view('posts.index', [
+            'posts' => $posts
+        ]);
     }
 
     /**
@@ -24,7 +27,7 @@ class PostController extends Controller
      */
     public function create()
     {
-        //
+        return view('posts.create');
     }
 
     /**
@@ -35,7 +38,19 @@ class PostController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $user = auth()->user();
+        
+        $validated = $this->validate($request, [
+            'body' => ['required', 'min:10']
+        ]);
+
+        $post = new Post([
+            'body' => $validated['body']
+        ]);
+        
+        $user->posts()->save($post);
+        
+        return redirect(route('posts.index'));
     }
 
     /**
@@ -46,7 +61,7 @@ class PostController extends Controller
      */
     public function show(Post $post)
     {
-        //
+        return view('posts.show', ['post' => $post]);
     }
 
     /**
@@ -57,7 +72,7 @@ class PostController extends Controller
      */
     public function edit(Post $post)
     {
-        //
+        return view('posts.edit', ['post' => $post]);
     }
 
     /**
@@ -69,7 +84,16 @@ class PostController extends Controller
      */
     public function update(Request $request, Post $post)
     {
-        //
+        
+        $validated = $this->validate($request, [
+            'body' => ['required', 'min:10']
+        ]);
+
+        $post->body = $validated['body'];
+
+        $post->save();
+        
+        return redirect(route('posts.index'));
     }
 
     /**
@@ -80,6 +104,18 @@ class PostController extends Controller
      */
     public function destroy(Post $post)
     {
-        //
+        if ($post->owner->id == auth()->user()->id) {
+            $post->delete();
+            
+            return back()->with([
+                'message' => 'Record was deleted.'
+            ]);
+        }else{
+            return redirect(route('posts.index'))->withErrors([
+                'You have no permission to delete this item'
+            ]);
+        }
+
+        return redirect(route('posts.index'));
     }
 }
